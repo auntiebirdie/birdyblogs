@@ -68,9 +68,9 @@ router.post('/', (req, res) => {
         }]
       }
     }).then((response) => {
-      res.sendStatus(200);
+      res.json('ok');
     }).catch((err) => {
-      res.sendStatus(500);
+      res.json({ error: err });
     });
   });
 });
