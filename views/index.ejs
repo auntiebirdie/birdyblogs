@@ -1,0 +1,64 @@
+<%- include( 'header.ejs') %>
+    <div id="errorMessage" class="d-none"></div>
+    <div id="form" class="row">
+        <div class="col-7">
+            <label for="source">
+                <p>Source URL</p>
+            </label>
+            <div class="row mb-3 align-items-center">
+                <div class="col-10">
+                    <input type="text" id="source" class="form-control" autocomplete="off">
+                </div>
+                <div class="col-2">
+                    <button id="fetchData" class="btn btn-info btn-sm" type="button">Fetch Data</button>
+                </div>
+            </div>
+            <label for="image">
+                <p>Image URL</p>
+            </label>
+            <input type="text" id="image" class="form-control mb-3" autocomplete="off">
+            <label for="credit">
+                <p class="mb-0">Attribution</p>
+            </label>
+            <div class="row mb-3 align-items-center">
+                <div class="col-6">
+                    <p class="mb-2 small">Name</p>
+                    <input type="text" id="attribution_name" class="form-control"
+                    autocomplete="off">
+                </div>
+                <div class="col-6">
+                    <p class="mb-2 small">Profile URL</p>
+                    <input type="text" id="attribution_url" class="form-control"
+                    autocomplete="off">
+                </div>
+            </div>
+            <label for="species">
+                <p>Species</p>
+            </label>
+            <select id="species" class="mb-3" multiple></select>
+            <label for="blogs">
+                <p>Blogs</p>
+            </label>
+            <select id="blogs" class="mb-3" multiple></select>
+        </div>
+        <div id="preview" class="col-5">
+            <p>Preview</p>
+            <div class="card">
+                <img src="/placeholder.jpg" class="card-img-top post-image">
+                <div class="card-body text-start text-dark">
+                    <div class="post-content"></div>
+                    <div class="post-tags text-muted"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 text-center mt-3">
+            <p>If everything looks good, then...</p>
+            <button id="submit" class="btn btn-success btn-lg">Submit!</button>
+        </div>
+    </div>
+
+    <script>
+        <%- include('scripts/index.ejs') %>
+    </script>
+
+<%- include( 'footer.ejs') %>

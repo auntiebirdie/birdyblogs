@@ -1,0 +1,165 @@
+var cache = {};
+var postData = {};
+var timeout = null;
+
+function fetchFromCache(kind) {
+  cache[kind] = sessionStorage.getItem(kind);
+  if (!cache[kind]) {
+    $.ajax({
+      cache: false,
+      url: `/api/${kind}`,
+      method: 'GET',
+      dataType: 'json',
+      contentType: 'application/json',
+      success: function(res) {
+        cache[kind] = res;
+        sessionStorage.setItem(kind,
+          JSON.stringify(res));
+      }
+    });
+  } else {
+    cache[kind] = JSON.parse(cache[kind]);
+  }
+}
+
+function updatePreview() {
+  postData = {
+    caption: "",
+    source: $('#image').val(),
+    source_url: $('#source').val(),
+    tags: [],
+    blogs: $('#blogs').val(),
+    species: []
+  };
+
+  let species = $('#species').val().map((species) => cache['birds'].find((bird) => bird.code == species));
+
+  for (let specie of species) {
+    postData.caption += `<p>${specie.commonName} <em>(${specie.scientificName})</em></p>`;
+    postData.species.push(specie.commonName);
+    postData.tags.push(specie.commonName, specie.scientificName);
+    if (!postData.tags.includes(specie.family)) {
+      postData.tags.push(specie.family);
+    }
+  }
+
+  postData.caption += `<p>&copy; <a href="${$('#attribution_url').val()}" target="_blank">${$('#attribution_name').val()}</a></p>`;
+
+  postData.tags.push($('#attribution_name').val(), 'birds');
+
+  $('img', '#preview').attr('src', postData.source);
+
+  $('.post-content', '#preview').html(postData.caption + `<p class="text-muted">Source: <a href="${$('#source').val()}" class="text-muted" target="_blank">${$('#source').val().match(/^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)/im)[1]}</a></p>`);
+
+  $('.post-tags', '#preview').html('#' + postData.tags.join(' #').toLowerCase());
+}
+
+fetchFromCache('birds');
+fetchFromCache('blogs');
+
+$(document).ready(() => {
+  new SlimSelect({
+    select: '#blogs',
+    ajax: function(search, callback) {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+
+      timeout = setTimeout(function() {
+        let data = fuzzysort.go(search, cache['blogs'], {
+          keys: ['name', 'title']
+        });
+        callback(data.map((datum) => {
+          return {
+            value: datum.obj.name,
+            text: `@${datum.obj.name}`,
+            innerHTML: `<img src="${datum.obj.avatar.url}" width="${datum.obj.avatar.width}" class="d-inline rounded me-2"> <div>@${datum.obj.name}<br>${datum.obj.title}</div>`
+          }
+        }));
+      }, 500);
+    },
+    onChange: function(info) {
+      updatePreview();
+    }
+  });
+
+  var species = new SlimSelect({
+    select: '#species',
+    ajax: function(search, callback) {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+      timeout = setTimeout(function() {
+        let data = fuzzysort.go(search, cache['birds'], {
+          keys: ['commonName', 'scientificName']
+        });
+        callback(data.map((datum) => {
+          return {
+            value: datum.obj.code,
+            text: `${datum.obj.commonName} (${datum.obj.scientificName})`,
+            innerHTML: `${datum.obj.commonName}<br>&nbsp;<small>(${datum.obj.scientificName})</small>`
+          }
+        }));
+      }, 500);
+    },
+    onChange: function() {
+      updatePreview();
+    }
+  });
+
+  $('#fetchData').on('click', function() {
+    $.ajax({
+      cache: false,
+      url: `/fetch?url=${encodeURIComponent($('#source').val())}`,
+      method: 'GET',
+      dataType: 'json',
+      contentType: 'application/json',
+      success: function(res) {
+        if (res.error) {} else {
+          for (let key in res) {
+            switch (key) {
+              case 'species':
+                var tmp = cache['birds'].find((bird) => bird.code == res['species']);
+
+                if (tmp && !$('#species').val().includes(tmp.code)) {
+                  species.setData([{
+                    value: tmp.code,
+                    text: `${tmp.commonName} (${tmp.scientificName})`,
+                    innerHTML: `${tmp.commonName}<br>&nbsp;<small>(${tmp.scientificName})</small>`
+                  }]);
+
+                  species.set([tmp.code]);
+                }
+
+                break;
+              default:
+                $(`#${key}`).val(res[key]);
+            }
+          }
+
+          updatePreview();
+        }
+      }
+    });
+  });
+
+  $('#submit').on('click', function() {
+    $('#form').css('opacity', .5);
+    $('input, button', '#form').prop('disabled', true);
+    $('select', '#form').each((i, select) => select.slim.disable());
+
+    this.innerHTML = '<span class="spinner-border"></span>';
+
+    $.ajax({
+      cache: false,
+      url: `/submit`,
+      method: 'POST',
+      data: JSON.stringify(postData),
+      dataType: 'json',
+      contentType: 'application/json',
+      success: function(res) {
+        window.location.href = '/';
+      }
+    });
+  });
+});
