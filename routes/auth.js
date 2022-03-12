@@ -6,10 +6,10 @@ const tumblr = require('tumblr.js');
 
 const consumer = new OAuth("https://www.tumblr.com/oauth/request_token",
   "https://www.tumblr.com/oauth/access_token",
-  secrets.OAUTH_KEY,
-  secrets.OAUTH_SECRET,
+  secrets.TUMBLR.OAUTH_KEY,
+  secrets.TUMBLR.OAUTH_SECRET,
   "1.0A",
-  "https://birdyblogs-xettruih3a-uc.a.run.app/auth/callback",
+  process.env.AUTH_CALLBACK || "https://birdyblogs-xettruih3a-uc.a.run.app/auth/callback",
   "HMAC-SHA1");
 
 router.get('/', (req, res) => {
@@ -36,8 +36,8 @@ router.get('/callback', (req, res) => {
       req.session.oauthTokenSecret = _oauthAccessTokenSecret;
 
       var client = new tumblr.Client({
-        consumer_key: secrets.OAUTH_KEY,
-        consumer_secret: secrets.OAUTH_SECRET,
+        consumer_key: secrets.TUMBLR.OAUTH_KEY,
+        consumer_secret: secrets.TUMBLR.OAUTH_SECRET,
         token: req.session.oauthToken,
         token_secret: req.session.oauthTokenSecret
       });

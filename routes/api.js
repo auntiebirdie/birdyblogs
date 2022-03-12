@@ -21,10 +21,10 @@ router.get('/birds', (req, res) => {
 
 router.get('/blogs', (req, res) => {
   var client = new tumblr.Client({
-    consumer_key: secrets.OAUTH_KEY,
-    consumer_secret: secrets.OAUTH_SECRET,
-    token: secrets.OAUTH_TOKEN,
-    token_secret: secrets.OAUTH_TOKENSECRET
+    consumer_key: secrets.TUMBLR.OAUTH_KEY,
+    consumer_secret: secrets.TUMBLR.OAUTH_SECRET,
+    token: secrets.TUMBLR.OAUTH_TOKEN,
+    token_secret: secrets.TUMBLR.OAUTH_TOKENSECRET
   });
 
   client.userInfo((err, data) => {
