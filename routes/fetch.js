@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 
 router.get('/', async (req, res) => {
+	console.log('fetch request received');
   axios.get(req.query.url)
     .then(async (response) => {
       var output = {};

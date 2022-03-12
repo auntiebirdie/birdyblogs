@@ -1,9 +1,11 @@
 <%- include( 'header.ejs') %>
+
     <div id="errorMessage" class="d-none alert alert-warning w-25 mx-auto mt-5  fixed-top"></div>
     <div id="form" class="row">
         <div class="col-12 col-md-7">
             <label for="source">
-                <p>Source URL</p>
+                <label for="source">Source URL</label>
+                <p class="small">Used to link to as a source for the image. Certain sites like Macaulay Library and Flickr can have some of the other fields filled in automatically by using the Fetch Data button.</p>
             </label>
             <div class="row mb-3 align-items-center">
                 <div class="col-10">
@@ -17,29 +19,33 @@
                 <p>Image URL</p>
             </label>
             <input type="text" id="image" class="form-control mb-3" autocomplete="off">
-            <label for="credit">
-                <p class="mb-0">Attribution</p>
-            </label>
-            <div class="row mb-3 align-items-center">
+            <div class="row mb-3 align-items-end">
                 <div class="col-6">
-                    <p class="mb-2 small">Name</p>
+                    <label for="attribution_name">Attribution (Name)</label>
+                    <p class="small">The name to attribute the image to (i.e. the photographer)</p>
                     <input type="text" id="attribution_name" class="form-control"
                     autocomplete="off">
                 </div>
                 <div class="col-6">
-                    <p class="mb-2 small">Profile URL</p>
-                    <input type="text" id="attribution_url" class="form-control"
-                    autocomplete="off">
+                    <label for="attribution_url">Attribution (URL)</label>
+                    <p class="small">A link to the photographer's website or profile.</p>
+                    <input type="text" id="attribution_url" class="form-control" autocomplete="off">
                 </div>
             </div>
-            <label for="species">
-                <p>Species</p>
-            </label>
-            <select id="species" class="mb-3" multiple></select>
-            <label for="blogs">
-                <p>Blogs</p>
-            </label>
-            <select id="blogs" class="mb-3" multiple></select>
+            <div class="row mb-3 align-items-start">
+              <div class="col-6">
+                <label for="species">
+                  <p>Species</p>
+                </label>
+                <select id="species" multiple></select>
+              </div>
+              <div class="col-6">
+                <label for="blogs">
+                  <p>Blogs</p>
+                </label>
+                <select id="blogs" multiple></select>
+              </div>
+            </div>
         </div>
         <div id="preview" class="col-12 col-md-5">
             <p>Preview</p>
@@ -51,7 +57,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-12 text-center mt-3">
+        <div class="col-12 text-center pt-3 mb-3">
             <p>If everything looks good, then...</p>
             <button id="submit" class="btn btn-success btn-lg">Submit!</button>
         </div>

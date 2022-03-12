@@ -3,6 +3,8 @@
     "deploy": "gcloud run deploy birdyblogs --source=. --region=us-central1"
   },
   "dependencies": {
+    "@google-cloud/connect-datastore": "^5.0.3",
+    "@google-cloud/datastore": "^6.6.2",
     "axios": "^0.26.1",
     "cheerio": "^1.0.0-rc.10",
     "ejs": "^3.1.6",

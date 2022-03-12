@@ -43,13 +43,41 @@ function updatePreview() {
     }
   }
 
-  postData.caption += `<p>&copy; <a href="${$('#attribution_url').val()}" target="_blank">${$('#attribution_name').val()}</a></p>`;
+  var content = "";
 
-  postData.tags.push($('#attribution_name').val(), 'birds');
+  if (species.length > 0) {
+    content += postData.caption;
+  }
+  else {
+    content += '<p><span class="bg-secondary text-light p-1">Species</span></p>';
+  }
 
-  $('img', '#preview').attr('src', postData.source);
+  if ($('#attribution_name').val()) {
+    postData.caption += `<p>&copy; <a href="${$('#attribution_url').val()}" target="_blank">${$('#attribution_name').val()}</a></p>`;
+    content += `<p>&copy; <a href="${$('#attribution_url').val()}" target="_blank">${$('#attribution_name').val()}</a></p>`;
 
-  $('.post-content', '#preview').html(postData.caption + `<p class="text-muted">Source: <a href="${$('#source').val()}" class="text-muted" target="_blank">${$('#source').val().match(/^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)/im)[1]}</a></p>`);
+    postData.tags.push($('#attribution_name').val());
+  }
+  else {
+    content += '<p>&copy; <span class="bg-secondary text-light p-1">Attribution Name</span></p>';
+  }
+
+  postData.tags.push('birds');
+
+  $('img', '#preview').attr('src', postData.source != "" ? postData.source : "/placeholder.jpg");
+
+
+  content += '<p class="text-muted">Source: ';
+
+  try {
+    content += (postData.source != "" ? `<a href="${$('#source').val()}" class="text-muted" target="_blank">${$('#source').val().match(/^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)/im)[1]}</a>` : '<span class="bg-secondary text-light p-1">Source</span>');
+  } catch (err) {
+    content += '<span class="bg-secondary text-light p-1">Source</span>';
+  }
+
+  content += '</p>';
+
+  $('.post-content', '#preview').html(content);
 
   $('.post-tags', '#preview').html('#' + postData.tags.join(' #').toLowerCase());
 }
@@ -106,6 +134,8 @@ $(document).ready(() => {
       updatePreview();
     }
   });
+
+  $('input', '#form').on('change', updatePreview);
 
   $('#fetchData').on('click', function() {
     $('#errorMessage').addClass('d-none');
@@ -172,4 +202,6 @@ $(document).ready(() => {
   $('#errorMessage').on('click', function () {
     $('#errorMessage').addClass('d-none');
   });
+
+  updatePreview();
 });

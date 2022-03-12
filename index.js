@@ -1,16 +1,26 @@
+const {Datastore} = require('@google-cloud/datastore');
+const {DatastoreStore} = require('@google-cloud/connect-datastore');
 const secrets = require('./secrets.json');
 const express = require('express');
-const session = require('express-session')
+const session = require('express-session');
 const app = express();
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(express.json());
 app.use(session({
+  store: new DatastoreStore({
+    kind: 'birdyblogs-sessions',
+    expirationMs: 0,
+    dataset: new Datastore()
+  }),
   secret: secrets.SESSION_TOKEN,
   key: 'birdyblogs.connect.sid',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+  }
 }));
 
 app.use((req, res, next) => {
