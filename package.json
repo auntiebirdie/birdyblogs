@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "deploy": "gcloud run deploy birdyblogs --source=. --region=us-central1"
+  },
   "dependencies": {
     "axios": "^0.26.1",
     "cheerio": "^1.0.0-rc.10",

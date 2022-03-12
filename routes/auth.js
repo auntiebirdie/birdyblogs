@@ -9,7 +9,7 @@ const consumer = new OAuth("https://www.tumblr.com/oauth/request_token",
   secrets.TUMBLR.OAUTH_KEY,
   secrets.TUMBLR.OAUTH_SECRET,
   "1.0A",
-  process.env.AUTH_CALLBACK || "https://birdyblogs-xettruih3a-uc.a.run.app/auth/callback",
+  "https://birdyblogs-xettruih3a-uc.a.run.app/auth/callback",
   "HMAC-SHA1");
 
 router.get('/', (req, res) => {

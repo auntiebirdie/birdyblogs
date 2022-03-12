@@ -1,7 +1,7 @@
 <%- include( 'header.ejs') %>
-    <div id="errorMessage" class="d-none"></div>
+    <div id="errorMessage" class="d-none alert alert-warning w-25 mx-auto mt-5  fixed-top"></div>
     <div id="form" class="row">
-        <div class="col-7">
+        <div class="col-12 col-md-7">
             <label for="source">
                 <p>Source URL</p>
             </label>
@@ -41,7 +41,7 @@
             </label>
             <select id="blogs" class="mb-3" multiple></select>
         </div>
-        <div id="preview" class="col-5">
+        <div id="preview" class="col-12 col-md-5">
             <p>Preview</p>
             <div class="card">
                 <img src="/placeholder.jpg" class="card-img-top post-image">

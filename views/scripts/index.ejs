@@ -108,6 +108,8 @@ $(document).ready(() => {
   });
 
   $('#fetchData').on('click', function() {
+    $('#errorMessage').addClass('d-none');
+
     $.ajax({
       cache: false,
       url: `/fetch?url=${encodeURIComponent($('#source').val())}`,
@@ -115,7 +117,10 @@ $(document).ready(() => {
       dataType: 'json',
       contentType: 'application/json',
       success: function(res) {
-        if (res.error) {} else {
+        if (res.error) {
+          $('#errorMessage').removeClass('d-none');
+          $('#errorMessage').html(`⚠️ ${res.error}`);
+        } else {
           for (let key in res) {
             switch (key) {
               case 'species':
@@ -162,5 +167,9 @@ $(document).ready(() => {
         window.location.href = '/';
       }
     });
+  });
+
+  $('#errorMessage').on('click', function () {
+    $('#errorMessage').addClass('d-none');
   });
 });
