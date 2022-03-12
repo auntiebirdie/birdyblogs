@@ -23,19 +23,28 @@ router.get('/blogs', (req, res) => {
   var client = new tumblr.Client({
     consumer_key: secrets.TUMBLR.OAUTH_KEY,
     consumer_secret: secrets.TUMBLR.OAUTH_SECRET,
-    token: secrets.TUMBLR.OAUTH_TOKEN,
-    token_secret: secrets.TUMBLR.OAUTH_TOKENSECRET
+    token: secrets.TUMBLR.DEFAULT.OAUTH_TOKEN,
+    token_secret: secrets.TUMBLR.DEFAULT.OAUTH_TOKENSECRET
   });
 
   client.userInfo((err, data) => {
-    res.json(data.user.blogs.filter((blog) => blog.uuid != 't:o33AUE_nYjUs6pOa9n04iQ').map((blog) => {
+    let blogs = data.user.blogs.filter((blog) => blog.uuid != 't:o33AUE_nYjUs6pOa9n04iQ').map((blog) => {
       return {
         uuid: blog.uuid,
         name: blog.name,
         title: blog.title,
         avatar: blog.avatar.pop()
       }
-    }));
+    });
+
+    blogs.push({
+      uuid: 't:edLv0reDrqUQrowliZVQDw',
+      name: 'fullfrontalbirds',
+      title: 'full frontal birds',
+      avatar: { width: 64, url : 'https://64.media.tumblr.com/avatar_ec481e600259_64.png' }
+    });
+
+    res.json(blogs);
   });
 });
 
