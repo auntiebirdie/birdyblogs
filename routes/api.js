@@ -20,6 +20,8 @@ router.get('/birds', (req, res) => {
 });
 
 router.get('/blogs', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
   var client = new tumblr.Client({
     consumer_key: secrets.TUMBLR.OAUTH_KEY,
     consumer_secret: secrets.TUMBLR.OAUTH_SECRET,

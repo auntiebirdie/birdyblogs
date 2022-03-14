@@ -3,23 +3,36 @@ var postData = {};
 var timeout = null;
 
 function fetchFromCache(kind) {
-  cache[kind] = sessionStorage.getItem(kind);
-  if (!cache[kind]) {
-    $.ajax({
-      cache: false,
-      url: `/api/${kind}`,
-      method: 'GET',
-      dataType: 'json',
-      contentType: 'application/json',
-      success: function(res) {
-        cache[kind] = res;
-        sessionStorage.setItem(kind,
-          JSON.stringify(res));
-      }
-    });
-  } else {
-    cache[kind] = JSON.parse(cache[kind]);
-  }
+  return new Promise((resolve, reject) => {
+    cache[kind] = sessionStorage.getItem(kind);
+
+    if (!cache[kind]) {
+      $.ajax({
+        cache: false,
+        url: `/api/${kind}`,
+        method: 'GET',
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(res) {
+          cache[kind] = res;
+          sessionStorage.setItem(kind, JSON.stringify(res));
+          resolve(res);
+        }
+      });
+    } else {
+      cache[kind] = JSON.parse(cache[kind]);
+      resolve(cache[kind]);
+    }
+  });
+}
+
+function toggleLoader (loading) {
+  if (loading)
+    $('#errorMessage').addClass('d-none');    
+
+  $('#form').css('opacity', loading ? .5 : 1);
+  $('input, button', '#form').prop('disabled', loading);
+  $('select', '#form').each((i, select) => select.slim[loading ? 'disable' : 'enable']());
 }
 
 function updatePreview() {
@@ -32,54 +45,55 @@ function updatePreview() {
     species: []
   };
 
-  let species = $('#species').val().map((species) => cache['birds'].find((bird) => bird.code == species));
+  fetchFromCache('birds').then((birds) => {
+    let species = $('#species').val().map((species) => birds.find((bird) => bird.code == species));
 
-  for (let specie of species) {
-    postData.caption += `<p>${specie.commonName} <em>(${specie.scientificName})</em></p>`;
-    postData.species.push(specie.commonName);
-    postData.tags.push(specie.commonName, specie.scientificName);
-    if (!postData.tags.includes(specie.family)) {
-      postData.tags.push(specie.family);
+    for (let specie of species) {
+      postData.caption += `<p>${specie.commonName} <em>(${specie.scientificName})</em></p>`;
+      postData.species.push(specie.commonName);
+      postData.tags.push(specie.commonName, specie.scientificName);
+      if (!postData.tags.includes(specie.family)) {
+        postData.tags.push(specie.family);
+      }
     }
-  }
 
-  var content = "";
+    var content = "";
 
-  if (species.length > 0) {
-    content += postData.caption;
-  }
-  else {
-    content += '<p><span class="bg-secondary text-light p-1">Species</span></p>';
-  }
+    if (species.length > 0) {
+      content += postData.caption;
+    }
+    else {
+      content += '<p><span class="bg-secondary text-light p-1">Species</span></p>';
+    }
 
-  if ($('#attribution_name').val()) {
-    postData.caption += `<p>&copy; <a href="${$('#attribution_url').val()}" target="_blank">${$('#attribution_name').val()}</a></p>`;
-    content += `<p>&copy; <a href="${$('#attribution_url').val()}" target="_blank">${$('#attribution_name').val()}</a></p>`;
+    if ($('#attribution_name').val()) {
+      postData.caption += `<p>&copy; <a href="${$('#attribution_url').val()}" target="_blank">${$('#attribution_name').val()}</a></p>`;
+      content += `<p>&copy; <a href="${$('#attribution_url').val()}" target="_blank">${$('#attribution_name').val()}</a></p>`;
 
-    postData.tags.push($('#attribution_name').val());
-  }
-  else {
-    content += '<p>&copy; <span class="bg-secondary text-light p-1">Attribution Name</span></p>';
-  }
+      postData.tags.push($('#attribution_name').val());
+    }
+    else {
+      content += '<p>&copy; <span class="bg-secondary text-light p-1">Attribution Name</span></p>';
+    }
 
-  postData.tags.push('birds');
+    postData.tags.push('birds');
 
-  $('img', '#preview').attr('src', postData.source != "" ? postData.source : "/placeholder.jpg");
+    $('img', '#preview').attr('src', postData.source != "" ? postData.source : "/placeholder.jpg");
 
+    content += '<p class="text-muted">Source: ';
 
-  content += '<p class="text-muted">Source: ';
+    try {
+      content += (postData.source_url != "" ? `<a href="${postData.source_url}" class="text-muted" target="_blank">${postData.source_url.match(/^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)/im)[1]}</a>` : '<span class="bg-secondary text-light p-1">Source</span>');
+    } catch (err) {
+      content += '<span class="bg-secondary text-light p-1">Source</span>';
+    }
 
-  try {
-    content += (postData.source != "" ? `<a href="${$('#source').val()}" class="text-muted" target="_blank">${$('#source').val().match(/^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)/im)[1]}</a>` : '<span class="bg-secondary text-light p-1">Source</span>');
-  } catch (err) {
-    content += '<span class="bg-secondary text-light p-1">Source</span>';
-  }
+    content += '</p>';
 
-  content += '</p>';
+    $('.post-content', '#preview').html(content);
 
-  $('.post-content', '#preview').html(content);
-
-  $('.post-tags', '#preview').html('#' + postData.tags.join(' #').toLowerCase());
+    $('.post-tags', '#preview').html('#' + postData.tags.join(' #').toLowerCase());
+  });
 }
 
 fetchFromCache('birds');
@@ -94,20 +108,24 @@ $(document).ready(() => {
       }
 
       timeout = setTimeout(function() {
-        let data = fuzzysort.go(search, cache['blogs'], {
-          keys: ['name', 'title']
+        fetchFromCache('blogs').then((blogs) => {
+          let data = fuzzysort.go(search, blogs, {
+            keys: ['name', 'title']
+          });
+
+          callback(data.map((datum) => {
+            return {
+              value: datum.obj.name,
+              text: `@${datum.obj.name}`,
+              innerHTML: `<img src="${datum.obj.avatar.url}" width="${datum.obj.avatar.width}" class="d-inline rounded me-2"> <div>@${datum.obj.name}<br>${datum.obj.title}</div>`
+            }
+          }));
         });
-        callback(data.map((datum) => {
-          return {
-            value: datum.obj.name,
-            text: `@${datum.obj.name}`,
-            innerHTML: `<img src="${datum.obj.avatar.url}" width="${datum.obj.avatar.width}" class="d-inline rounded me-2"> <div>@${datum.obj.name}<br>${datum.obj.title}</div>`
-          }
-        }));
       }, 500);
     },
     onChange: function(info) {
-      updatePreview();
+      if ($('#form').css('opacity') == 1)
+        updatePreview();
     }
   });
 
@@ -118,27 +136,33 @@ $(document).ready(() => {
         clearTimeout(timeout);
       }
       timeout = setTimeout(function() {
-        let data = fuzzysort.go(search, cache['birds'], {
-          keys: ['commonName', 'scientificName']
+        fetchFromCache('birds').then((birds) => {
+          let data = fuzzysort.go(search, birds, {
+            keys: ['commonName', 'scientificName']
+          });
+
+          callback(data.map((datum) => {
+            return {
+              value: datum.obj.code,
+              text: `${datum.obj.commonName} (${datum.obj.scientificName})`,
+              innerHTML: `${datum.obj.commonName}<br>&nbsp;<small>(${datum.obj.scientificName})</small>`
+            }
+          }));
         });
-        callback(data.map((datum) => {
-          return {
-            value: datum.obj.code,
-            text: `${datum.obj.commonName} (${datum.obj.scientificName})`,
-            innerHTML: `${datum.obj.commonName}<br>&nbsp;<small>(${datum.obj.scientificName})</small>`
-          }
-        }));
       }, 500);
     },
     onChange: function() {
-      updatePreview();
+      if ($('#form').css('opacity') == 1)
+        updatePreview();
     }
   });
 
   $('input', '#form').on('change', updatePreview);
 
   $('#fetchData').on('click', function() {
-    $('#errorMessage').addClass('d-none');
+    toggleLoader(true);
+
+    this.innerHTML = '<span class="spinner-border"></span>';
 
     $.ajax({
       cache: false,
@@ -146,42 +170,62 @@ $(document).ready(() => {
       method: 'GET',
       dataType: 'json',
       contentType: 'application/json',
-      success: function(res) {
+      success: (res) => {
         if (res.error) {
           $('#errorMessage').removeClass('d-none');
           $('#errorMessage').html(`⚠️ ${res.error}`);
+        toggleLoader(false);
+        this.innerHTML = 'Fetch Data';
         } else {
-          for (let key in res) {
-            switch (key) {
-              case 'species':
-                var tmp = cache['birds'].find((bird) => bird.code == res['species']);
+          fetchFromCache('birds').then((birds) => {
+            for (let key in res) {
+              switch (key) {
+                case 'species':
+                  var tmp = birds.find((bird) => bird.code == res['species']);
 
-                if (tmp && !$('#species').val().includes(tmp.code)) {
-                  species.setData([{
-                    value: tmp.code,
-                    text: `${tmp.commonName} (${tmp.scientificName})`,
-                    innerHTML: `${tmp.commonName}<br>&nbsp;<small>(${tmp.scientificName})</small>`
-                  }]);
+                  if (tmp && !$('#species').val().includes(tmp.code)) {
+                    species.setData([{
+                      value: tmp.code,
+                      text: `${tmp.commonName} (${tmp.scientificName})`,
+                      innerHTML: `${tmp.commonName}<br>&nbsp;<small>(${tmp.scientificName})</small>`
+                    }]);
 
-                  species.set([tmp.code]);
-                }
+                    species.set([tmp.code]);
+                  }
 
-                break;
-              default:
-                $(`#${key}`).val(res[key]);
+                  break;
+                default:
+                  $(`#${key}`).val(res[key]);
+              }
             }
-          }
 
-          updatePreview();
+            updatePreview();
+            toggleLoader(false);
+            this.innerHTML = 'Fetch Data';
+          });
         }
       }
     });
   });
 
   $('#submit').on('click', function() {
-    $('#form').css('opacity', .5);
-    $('input, button', '#form').prop('disabled', true);
-    $('select', '#form').each((i, select) => select.slim.disable());
+    var pleaseNoUse = {
+      'attribution_name' : ['Anne Reardon']
+    };
+
+    for (let key in pleaseNoUse) {
+      if (pleaseNoUse[key].includes($('#' + key).val())) {
+        switch (key) {
+          case 'attribution_name':
+            $('#errorMessage').removeClass('d-none');
+            $('#errorMessage').html(`⚠️ The copyright holder ${$('#' + key).val()} has requested that their photographs not be used.`);
+            break;
+        }
+        return false;
+      }
+    } 
+
+    toggleLoader(true);
 
     this.innerHTML = '<span class="spinner-border"></span>';
 
@@ -193,7 +237,6 @@ $(document).ready(() => {
       dataType: 'json',
       contentType: 'application/json',
       success: function(res) {
-        console.log(res);
         window.location.href = '/';
       }
     });

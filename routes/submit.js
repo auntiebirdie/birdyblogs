@@ -5,10 +5,12 @@ const tumblr = require('tumblr.js');
 const axios = require('axios');
 
 router.post('/', (req, res) => {
+  var blogs = [...new Set(req.body.blogs)];
+
   new Promise(async (resolve, reject) => {
     let promises = [];
 
-    for (let blog of req.body.blogs) {
+    for (let blog of blogs) {
       promises.push(new Promise((resolve, reject) => {
         var client = new tumblr.Client({
           consumer_key: secrets.TUMBLR.OAUTH_KEY,
@@ -56,7 +58,7 @@ router.post('/', (req, res) => {
           title: req.body.source_url.match(/^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)/im)[1],
           url: req.body.source_url,
           author: {
-            name: req.body.blogs.join(', ')
+            name: blogs.join(', ')
           },
           description: description,
           image: {

@@ -24,7 +24,7 @@ app.use(session({
 }));
 
 app.use((req, res, next) => {
-  if (!req.session.user && !req.path.startsWith('/auth')) {
+  if (!req.session.user && !req.path.startsWith('/auth') && !req.path == '/api/blogs') {
     return res.redirect('/auth');
   }
 
