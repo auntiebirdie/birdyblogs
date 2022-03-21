@@ -1,52 +1,22 @@
-var cache = {};
 var postData = {};
 var timeout = null;
 
-function fetchFromCache(kind) {
-  return new Promise((resolve, reject) => {
-    cache[kind] = sessionStorage.getItem(kind);
-
-    if (!cache[kind]) {
-      $.ajax({
-        cache: false,
-        url: `/api/${kind}`,
-        method: 'GET',
-        dataType: 'json',
-        contentType: 'application/json',
-        success: function(res) {
-          cache[kind] = res;
-          sessionStorage.setItem(kind, JSON.stringify(res));
-          resolve(res);
-        }
-      });
-    } else {
-      cache[kind] = JSON.parse(cache[kind]);
-      resolve(cache[kind]);
-    }
-  });
-}
-
-function toggleLoader (loading) {
-  if (loading)
-    $('#errorMessage').addClass('d-none');    
-
-  $('#form').css('opacity', loading ? .5 : 1);
-  $('input, button', '#form').prop('disabled', loading);
-  $('select', '#form').each((i, select) => select.slim[loading ? 'disable' : 'enable']());
-}
+toggleLoader(true);
 
 function updatePreview() {
   postData = {
     caption: "",
-    source: $('#image').val(),
-    source_url: $('#source').val(),
+    source: <%- locals.image ? `"${image}"` : `$('#image').val()` %>,
+    source_url: <%- locals.source ? `"${source}"` : `$('#source').val()` %>,
     tags: [],
-    blogs: $('#blogs').val(),
+    blogs: <%- locals.blog ? `["${blog}"]` : `$('#blogs').val()` %>,
     species: []
   };
 
   fetchFromCache('birds').then((birds) => {
-    let species = $('#species').val().map((species) => birds.find((bird) => bird.code == species));
+    $('.post-blogs', '#preview').html(postData.blogs.join(", "));
+
+    let species = $('#species').val().map((species) => birds.find((bird) => bird.id == species));
 
     for (let specie of species) {
       postData.caption += `<p>${specie.commonName} <em>(${specie.scientificName})</em></p>`;
@@ -54,6 +24,9 @@ function updatePreview() {
       postData.tags.push(specie.commonName, specie.scientificName);
       if (!postData.tags.includes(specie.family)) {
         postData.tags.push(specie.family);
+      }
+      if (!postData.tags.includes(specie.order)) {
+        postData.tags.push(specie.order);
       }
     }
 
@@ -93,6 +66,8 @@ function updatePreview() {
     $('.post-content', '#preview').html(content);
 
     $('.post-tags', '#preview').html('#' + postData.tags.join(' #').toLowerCase());
+
+    toggleLoader(false);
   });
 }
 
@@ -100,6 +75,35 @@ fetchFromCache('birds');
 fetchFromCache('blogs');
 
 $(document).ready(() => {
+  var species = new SlimSelect({
+    select: '#species',
+    ajax: function(search, callback) {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+      timeout = setTimeout(function() {
+        fetchFromCache('birds').then((birds) => {
+          let data = fuzzysort.go(search, birds, {
+            keys: ['commonName', 'scientificName']
+          });
+
+          callback(data.map((datum) => {
+            return {
+              value: datum.obj.id,
+              text: `${datum.obj.commonName} (${datum.obj.scientificName})`,
+              innerHTML: `${datum.obj.commonName}<br>&nbsp;<small>(${datum.obj.scientificName})</small>`
+            }
+          }));
+        });
+      }, 500);
+    },
+    onChange: function() {
+      if ($('body').css('opacity') == 1)
+        updatePreview();
+    }
+  });
+
+ <% if (mode == 'post') { %>
   new SlimSelect({
     select: '#blogs',
     ajax: function(search, callback) {
@@ -123,41 +127,39 @@ $(document).ready(() => {
         });
       }, 500);
     },
-    onChange: function(info) {
-      if ($('#form').css('opacity') == 1)
-        updatePreview();
-    }
-  });
-
-  var species = new SlimSelect({
-    select: '#species',
-    ajax: function(search, callback) {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-      timeout = setTimeout(function() {
-        fetchFromCache('birds').then((birds) => {
-          let data = fuzzysort.go(search, birds, {
-            keys: ['commonName', 'scientificName']
-          });
-
-          callback(data.map((datum) => {
-            return {
-              value: datum.obj.code,
-              text: `${datum.obj.commonName} (${datum.obj.scientificName})`,
-              innerHTML: `${datum.obj.commonName}<br>&nbsp;<small>(${datum.obj.scientificName})</small>`
-            }
-          }));
-        });
-      }, 500);
-    },
     onChange: function() {
-      if ($('#form').css('opacity') == 1)
+      if ($('body').css('opacity') == 1)
         updatePreview();
     }
   });
+ <% } else if (mode == 'edit') { %>
+  fetchFromCache('birds').then((birds) => {
+    var data = [];
+    var values = [];
 
-  $('input', '#form').on('change', updatePreview);
+    for (let specie of <%- JSON.stringify(species) %>) {
+      var tmp = birds.find((bird) => bird.scientificName == specie);
+
+      if (tmp && !$('#species').val().includes(tmp.id)) {
+        data.push({
+                      value: tmp.id,
+                      text: `${tmp.commonName} (${tmp.scientificName})`,
+                      innerHTML: `${tmp.commonName}<br>&nbsp;<small>(${tmp.scientificName})</small>`
+        });
+
+        values.push(tmp.id);
+      }
+    }
+
+    species.setData(data);
+    species.set(values);
+  });
+ <% } %>
+
+  $('input', '#form').on('change', function () {
+    if ($('body').css('opacity') == 1) 
+      updatePreview();
+  });
 
   $('#fetchData').on('click', function() {
     toggleLoader(true);
@@ -181,16 +183,16 @@ $(document).ready(() => {
             for (let key in res) {
               switch (key) {
                 case 'species':
-                  var tmp = birds.find((bird) => bird.code == res['species']);
+                  var tmp = birds.find((bird) => bird.id == res['species']);
 
-                  if (tmp && !$('#species').val().includes(tmp.code)) {
+                  if (tmp && !$('#species').val().includes(tmp.id)) {
                     species.setData([{
-                      value: tmp.code,
+                      value: tmp.id,
                       text: `${tmp.commonName} (${tmp.scientificName})`,
                       innerHTML: `${tmp.commonName}<br>&nbsp;<small>(${tmp.scientificName})</small>`
                     }]);
 
-                    species.set([tmp.code]);
+                    species.set([tmp.id]);
                   }
 
                   break;
@@ -225,26 +227,50 @@ $(document).ready(() => {
       }
     } 
 
+    for (let key in postData) {
+       if (!postData[key] || postData[key] == "" || postData[key].length == 0) {
+         $('#errorMessage').removeClass('d-none');
+         $('#errorMessage').html('⚠️ Please fill in a value for all fields.'); 
+         return false;
+       }
+    }
+
     toggleLoader(true);
 
     this.innerHTML = '<span class="spinner-border"></span>';
 
     $.ajax({
       cache: false,
-      url: `/submit`,
+      url: "<%= mode == 'post' ? '/submit' : `/blogs/${blog}/${post}` %>",
       method: 'POST',
       data: JSON.stringify(postData),
       dataType: 'json',
       contentType: 'application/json',
       success: function(res) {
-        window.location.href = '/';
+        window.location.reload();
       }
     });
   });
+
+ <% if (mode == 'edit') { %>
+  $('#delete').on('click', function () {
+    $.ajax({
+      cache: false,
+      url: "<%= `/blogs/${blog}/${post}` %>",
+      method: 'DELETE',
+      data: JSON.stringify(postData),
+      dataType: 'json',
+      contentType: 'application/json',
+      success: function(res) {
+        window.location.href = '/blogs/<%= blog %>/queue';
+      }
+    });
+  });
+ <% } %>
 
   $('#errorMessage').on('click', function () {
     $('#errorMessage').addClass('d-none');
   });
 
-  updatePreview();
+  setTimeout(updatePreview, 250);
 });

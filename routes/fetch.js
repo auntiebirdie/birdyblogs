@@ -4,10 +4,13 @@ const express = require('express');
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-	console.log('fetch request received');
-  axios.get(req.query.url)
+  axios.get(req.query.url, {})
     .then(async (response) => {
       var output = {};
+
+      try {
+        var $ = cheerio.load(response.data);
+      } catch (err) {}
 
       switch (response.request.connection._host) {
         case 'macaulaylibrary.org':
@@ -20,8 +23,6 @@ router.get('/', async (req, res) => {
           break;
         case 'flickr.com':
         case 'www.flickr.com':
-          var $ = cheerio.load(response.data);
-
           output.source = $('meta[property="og:url"]').attr('content');
           output.image = $('meta[property="og:image"]').attr('content');
           output.attribution_name = $('a.owner-name').html();
@@ -30,8 +31,6 @@ router.get('/', async (req, res) => {
           break;
         case 'unsplash.com':
         case 'www.unsplash.com':
-          var $ = cheerio.load(response.data);
-
           output.source = $('meta[property="og:url"]').attr('content');
           output.image = $('meta[property="og:image:secure_url"]').attr('content').split('?crop').shift() + '?w=1080';
           output.attribution_name = $('meta[property="og:title"]').attr('content').replace('Photo by', '').replace('on Unsplash', '').trim();
@@ -40,8 +39,6 @@ router.get('/', async (req, res) => {
           break;
         case 'danielslim.com':
         case 'www.danielslim.com':
-          var $ = cheerio.load(response.data);
-
           output.source = $('meta[property="og:url"]').attr('content');
           output.image = $('meta[property="og:image"]').attr('content');
           output.attribution_name = "Daniel Swee H Lim";
@@ -50,12 +47,18 @@ router.get('/', async (req, res) => {
           break;
         case 'pbase.com':
         case 'www.pbase.com':
-          var $ = cheerio.load(response.data);
-
           output.source = $('meta[property="og:url"]').attr('content');
           output.image = $('img', '#image').attr('src');
           output.attribution_name = $('a', '#localmenu').first().text();
           output.attribution_url = "https://www.pbase.com" + $('a', '#localmenu').first().attr('href');
+
+          break;
+        case 'feederwatch.org':
+        case 'www.feederwatch.org':
+          output.source = $('meta[property="og:url"]').attr('content');
+          output.image = $('a', '.clomedia-slideshow-stage').attr('href');
+          output.attribution_name = $('p', '.clomedia-info-div').first().text();
+          output.attribution_url = output.source;
 
           break;
         default:
@@ -68,9 +71,18 @@ router.get('/', async (req, res) => {
 
       res.json(output);
     }).catch((err) => {
-      res.json({
-	      error: "Something went wrong trying to fetch the URL provided."
-      });
+      switch (err.response.status) {
+        case 403:
+          res.json({
+            error: "That host does not allow their site to be scraped, but you can still enter the data manually."
+          });
+          break;
+        default:
+          res.json({
+            error: "Something went wrong trying to fetch the URL provided."
+          });
+          break;
+      }
     });
 });
 

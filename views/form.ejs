@@ -1,0 +1,84 @@
+<%- include( 'header.ejs') %>
+
+  <div id="errorMessage" class="d-none alert alert-warning w-25 mx-auto mt-5 fixed-top"></div>
+  <div id="form" class="row">
+    <div class="col-12 col-md-7">
+     <% if (mode == 'post') { %>
+      <label for="source">
+        <p>Source URL</p>
+      </label>
+      <p class="small">Used to link to as a source for the image. Certain sites like Macaulay Library and Flickr can have some of the other fields filled in automatically by using the Fetch Data button.</p>
+      <div class="row mb-3 align-items-center">
+        <div class="col-10">
+          <input type="text" id="source" class="form-control" autocomplete="off">
+        </div>
+        <div class="col-2">
+          <button id="fetchData" class="btn btn-info btn-sm" type="button">Fetch Data</button>
+        </div>
+      </div>
+      <label for="image">
+        <p>Image URL</p>
+      </label>
+      <input type="text" id="image" class="form-control mb-3" autocomplete="off">
+     <% } %>
+      <div class="row mb-3 align-items-end">
+        <div class="col-6">
+          <label for="attribution_name">
+            <p>Photographer</p>
+          </label>
+          <input type="text" id="attribution_name" class="form-control" autocomplete="off" value="<%= locals.attribution_name %>">
+        </div>
+        <div class="col-6">
+          <label for="attribution_url">
+            <p>Photographer's profile/website</p>
+          </label>
+          <input type="text" id="attribution_url" class="form-control" autocomplete="off" value="<%= locals.attribution_url %>">
+        </div>
+      </div>
+      <div class="row mb-3 align-items-start">
+        <div class="col-12 <%= mode == 'post' ? 'col-md-6' : '' %>">
+          <label for="species">
+            <p>Species</p>
+          </label>
+          <select id="species" multiple></select>
+        </div>
+       <% if (mode == 'post') { %>
+        <div class="col-12 col-md-6">
+          <label for="blogs">
+            <p>Blogs</p>
+          </label>
+          <select id="blogs" multiple></select>
+        </div>
+       <% } %>
+      </div>
+    </div>
+    <div id="preview" class="col-12 col-md-5">
+      <p>Preview</p>
+      <div class="card">
+        <div class="post-blogs text-start text-dark fw-bold p-1"></div>
+        <img src="/placeholder.jpg" class="card-img-top post-image">
+        <div class="card-body text-start text-dark">
+          <div class="post-content"></div>
+            <div class="post-tags text-muted"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 text-center pt-3 mb-3">
+        <p>If everything looks good, then...</p>
+        <button id="submit" class="btn btn-success btn-lg">Submit!</button>
+      </div>
+
+     <% if (mode == 'edit') { %>
+      <div class="col-12 text-center pt-3 mb-3">
+        <p>Or if everything is NOT good, then...</p>
+        <button id="delete" class="btn btn-danger btn-lg">Delete!</button>
+      </div>
+     <% } %>
+    </div>
+  </div>
+
+  <script>
+    <%- include('scripts/index.ejs') %>
+  </script>
+
+<%- include( 'footer.ejs') %>

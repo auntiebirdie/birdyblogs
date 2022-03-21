@@ -1,0 +1,102 @@
+<%- include('header.ejs') %>
+
+  <div id="blog" class="row">
+    <div class="col-12 text-center">
+      <span class="spinner-border align-middle me-2"></span> <em>Loading blog...</em>
+    </div>
+  </div>
+
+  <script>
+    $(document).ready(function () {
+      toggleLoader(true);
+
+      fetchFromCache('blogs').then((blogs) => {
+        var blog = blogs.find((blog) => blog.name == '<%= blog %>');
+        var content = "";
+
+        content += '<div class="col-12 text-start mb-5">';
+          content += `<img src="${blog.avatar.url}" class="float-start rounded me-3 mt-2" width="${blog.avatar.width}">`;
+          content += '<div style="overflow: hidden">';
+            content += `<h2>${blog.name}</h2>`;
+            content += `<h5>${blog.title}</h5>`
+            content += '<div id="actions">';
+              content += '<a class="mx-2">Queue</a>';
+              content += '<a href="/blogs/<%= blog %>/posts" class="mx-2">Posts</a>';
+              content += '<a href="/blogs/<%= blog %>/notifications" class="mx-2">Notifications</a>';
+            content += '</div>';
+          content += '</div>';
+        content += '</div>';
+
+        content += '<div id="results" class="col-12 text-start">';
+        content += '</div>';
+
+        $('#blog').html(content);
+
+        $('#results').html('<div class="text-center"><span class="spinner-border align-middle me-2"></span></div>');
+
+        $.ajax({
+          cache: false,
+          url: '/blogs/<%= blog %>/fetch/<%= type %>',
+          method: 'GET',
+          contentType: 'application/json',
+          success: function(res) {
+            if (res.error)
+              return $('#results').html('<div class="text-center"><em>Encountered an error trying to fetch the requested data.</em></div>');
+
+            var results = res.response.posts || res.response.notifications;
+            var content = "";
+
+            if (results.length == 0)
+              return $('#results').html('<div class="text-center"><em>No results found.</em></div>');
+
+            content += '<div class="row">';
+
+            for (let result of results) {
+              switch ('<%= type %>') {
+                case 'Queue':
+                case 'Posts':
+                  if (result.type == 'photo') {
+                    content += '<div class="col-3 mb-4">';
+                      content += '<div class="card">';
+                        content += `<a href="/blogs/<%= blog %>/${result.id_string}" target="_blank">`;
+                          content += `<img src="${result.photos[0].original_size.url}" class="card-img-top post-image">`;
+                        content += '</a>';
+                        content += '<div class="card-body text-start text-dark">';
+                          content += `<div class="post-content">${result.caption}</div>`;
+                          content += `<div class="post-tags text-muted">#${result.tags.join(' #')}</div>`;
+                        content += '</div>';
+                      content += '</div>';
+                    content += '</div>';
+                  }
+
+                  break;
+                case 'Notifications':
+                  if (result.type == 'reblog') {
+                    content += '<div class="col-12 mb-3">';
+                      content += `<img src="${result.media_url}" class="float-start rounded me-3">`;
+                      content += `<p><a href="https://${result.from_tumblelog_name}.tumblr.com/post/${result.post_id}" target="_blank">@${result.from_tumblelog_name}</a>:</p>`;
+
+                      if (result.added_text)
+                        content += `<p>${result.added_text}</p>`;
+
+                      if (result.post_tags.length > 0)
+                        content += '<p>#' + result.post_tags.join(' #') + '</p>';
+
+                    content += '</div>';
+                  }
+                  break;
+              }
+            }
+
+            content += '</div>';
+
+            $('#results').html(content);
+
+            toggleLoader(false);
+          }
+        });
+      });
+    });
+  </script>
+
+<%- include('footer.ejs') %>

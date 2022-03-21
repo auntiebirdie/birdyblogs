@@ -1,7 +1,6 @@
-const secrets = require('../secrets.json');
 const express = require('express');
 const router = express.Router();
-const tumblr = require('tumblr.js');
+const tumblr = require('../tumblr.js');
 
 router.get('/birds', (req, res) => {
   const https = require('https');
@@ -22,31 +21,42 @@ router.get('/birds', (req, res) => {
 router.get('/blogs', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  var client = new tumblr.Client({
-    consumer_key: secrets.TUMBLR.OAUTH_KEY,
-    consumer_secret: secrets.TUMBLR.OAUTH_SECRET,
-    token: secrets.TUMBLR.DEFAULT.OAUTH_TOKEN,
-    token_secret: secrets.TUMBLR.DEFAULT.OAUTH_TOKENSECRET
-  });
+  var client = tumblr.client();
 
-  client.userInfo((err, data) => {
-    let blogs = data.user.blogs.filter((blog) => blog.uuid != 't:o33AUE_nYjUs6pOa9n04iQ').map((blog) => {
+  client.userInfo(async (err, data) => {
+    var blogs = data.user.blogs.filter((blog) => blog.uuid != 't:o33AUE_nYjUs6pOa9n04iQ').map((blog) => {
       return {
         uuid: blog.uuid,
         name: blog.name,
         title: blog.title,
-        avatar: blog.avatar.pop()
+        avatar: blog.avatar.pop(),
+        queue: blog.queue
       }
     });
 
-    blogs.push({
-      uuid: 't:edLv0reDrqUQrowliZVQDw',
-      name: 'fullfrontalbirds',
-      title: 'full frontal birds',
-      avatar: { width: 64, url : 'https://64.media.tumblr.com/avatar_ec481e600259_64.png' }
-    });
+    let otherBlogs = ['fullfrontalbirds'];
 
-    res.json(blogs);
+    for (let blog of otherBlogs) {
+      var client = tumblr.client(blog);
+
+      await new Promise((resolve, reject) => {
+        client.userInfo((err, data) => {
+          let blog = data.user.blogs[0];
+
+          blogs.push({
+            uuid: blog.uuid,
+            name: blog.name,
+            title: blog.title,
+            avatar: blog.avatar.pop(),
+            queue: blog.queue
+          });
+
+          resolve();
+        });
+      });
+    }
+
+    res.json(blogs.sort((a, b) => a.name.localeCompare(b.name)));
   });
 });
 

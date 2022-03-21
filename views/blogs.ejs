@@ -1,0 +1,66 @@
+<%- include('header.ejs') %>
+
+  <div id="blogs" class="row">
+    <div class="col-12 text-center">
+      <span class="spinner-border align-middle me-2"></span> <em>Loading blogs...</em>
+    </div>
+  </div>
+
+  <script>
+    $(document).ready(function () {
+      sessionStorage.removeItem('blogs');
+
+      $.ajax({
+        cache: false,
+        url: '/api/blogs',
+        method: 'GET',
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function(res) {
+          sessionStorage.setItem('blogs', JSON.stringify(res));
+
+          var content = "";
+
+          res.sort((a, b) => a.queue - b.queue);
+
+          for (let blog of res) {
+            content += '<div class="col-12 col-md-3 text-start">';
+              content += '<div class="px-2 py-3">';
+                content += `<img src="${blog.avatar.url}" class="float-start rounded me-2 align-top" width="${blog.avatar.width}">`;
+                content += '<div style="overflow: hidden">';
+                  content += `<p>${blog.name}</p>`;
+                  content += `<p>Queue: ${blog.queue} <button data-action="shuffle" data-blog="${blog.name}" class="btn btn-info btn-sm float-end me-2">Shuffle</button></p>`;
+                content += '</div>';
+                content += `<p>View: <a href="/blogs/${blog.name}/queue">Queue</a> | <a href="/blogs/${blog.name}/posts">Posts</a> | <a href="/blogs/${blog.name}/notifications">Notifications</a></p>`;
+              content += '</div>';
+            content += '</div>';
+          }
+
+          $('#blogs').html(content);
+        }
+      });
+
+      $('#blogs').on('click', 'button[data-action="shuffle"]', function () {
+        var button = this;
+
+        if (!button.disabled) {
+          button.innerHTML = '<span class="spinner-border"></span>';
+          button.disabled = true;
+
+          $.ajax({
+            cache: false,
+            url: '/blogs/' + button.getAttribute('data-blog') + '/shuffle',
+            method: 'POST',
+            dataType: 'json',
+            contentType: 'application/json',
+            success: function(res) {
+              button.innerHTML = 'Shuffled!';
+              button.disabled = false;
+            }
+          });
+        }
+      });
+    });
+  </script>
+
+<%- include('footer.ejs') %>

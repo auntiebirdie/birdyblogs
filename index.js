@@ -1,5 +1,9 @@
-const {Datastore} = require('@google-cloud/datastore');
-const {DatastoreStore} = require('@google-cloud/connect-datastore');
+const {
+  Datastore
+} = require('@google-cloud/datastore');
+const {
+  DatastoreStore
+} = require('@google-cloud/connect-datastore');
 const secrets = require('./secrets.json');
 const express = require('express');
 const session = require('express-session');
@@ -24,25 +28,24 @@ app.use(session({
 }));
 
 app.use((req, res, next) => {
-  if (!req.session.user && !req.path.startsWith('/auth') && !req.path == '/api/blogs') {
+  var publicRoutes = [
+    '/auth',
+    '/auth/callback',
+    '/api/blogs',
+    '/logout'
+  ];
+
+  if (!req.session.user && !publicRoutes.includes(req.path)) {
     return res.redirect('/auth');
   }
 
   next();
 });
 
-app.get('/', (req, res) => {
-  let user = req.session.user;
-
-  if (user.blogs.find((blog) => blog.uuid == 't:9HVGjfdkURg5_Qk85MwsZQ' || blog.uuid == 't:o33AUE_nYjUs6pOa9n04iQ')) {
-    res.render('index');
-  } else {
-    res.render('request');
-  }
-});
-
+app.use('/', require('./routes/index.js'));
 app.use('/auth', require('./routes/auth.js'));
 app.use('/api', require('./routes/api.js'));
+app.use('/blogs', require('./routes/blogs.js'));
 app.use('/fetch', require('./routes/fetch.js'));
 app.use('/submit', require('./routes/submit.js'));
 

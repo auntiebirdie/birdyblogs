@@ -9,6 +9,49 @@
     <link rel="stylesheet" href="/style.css">
 
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+
+    <script>
+      var cache = {};
+
+      function fetchFromCache(kind) {
+        return new Promise((resolve, reject) => {
+          cache[kind] = sessionStorage.getItem(kind);
+
+          if (!cache[kind]) {
+            $.ajax({
+              cache: false,
+              url: `/api/${kind}`,
+              method: 'GET',
+              dataType: 'json',
+              contentType: 'application/json',
+              success: function(res) {
+                cache[kind] = res;
+                sessionStorage.setItem(kind, JSON.stringify(res));
+                resolve(res);
+              }
+            });
+          } else {
+            cache[kind] = JSON.parse(cache[kind]);
+
+            if (kind == 'birds' && !cache[kind][0].order) {
+              sessionStorage.removeItem('birds');
+              resolve(fetchFromCache('birds'));
+            }
+
+            resolve(cache[kind]);
+          }
+        });
+      }
+
+      function toggleLoader (loading) {
+        if (loading)
+          $('#errorMessage').addClass('d-none');    
+
+        $('body').css('opacity', loading ? .5 : 1);
+        $('input, button', '#form').prop('disabled', loading);
+        $('select', '#form').each((i, select) => select.slim && select.slim[loading ? 'disable' : 'enable']());
+      }
+    </script>
   </head>
   <body class="d-flex h-100 text-center text-white bg-dark">
 
@@ -19,6 +62,10 @@
             <img src="/birdyblogs.png" class="me-2" width="64">
             The Flock of Niche Bird Blogs
           </h2>
+          <nav class="nav nav-masthead justify-content-end">
+            <a class="nav-link text-light fs-5" href="/">Submit Photo</a>
+            <a class="nav-link text-light fs-5" href="/blogs">View Blogs</a>
+          </nav>
         </div>
       </header>
 
