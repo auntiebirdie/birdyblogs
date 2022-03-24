@@ -74,14 +74,16 @@
                   if (result.type == 'reblog') {
                     content += '<div class="col-12 mb-3">';
                       content += `<img src="${result.media_url}" class="float-start rounded me-3">`;
-                      content += `<p><a href="https://${result.from_tumblelog_name}.tumblr.com/post/${result.post_id}" target="_blank">@${result.from_tumblelog_name}</a>:</p>`;
+                      content += '<div style="overflow: hidden">';
+                        content += `<p><a href="https://${result.from_tumblelog_name}.tumblr.com/post/${result.post_id}" target="_blank">@${result.from_tumblelog_name}</a>:</p>`;
 
-                      if (result.added_text)
-                        content += `<p>${result.added_text}</p>`;
+                        if (result.added_text)
+                          content += `<p>${result.added_text}</p>`;
 
-                      if (result.post_tags.length > 0)
-                        content += '<p>#' + result.post_tags.join(' #') + '</p>';
+                        if (result.post_tags.length > 0)
+                          content += '<p>#' + result.post_tags.join(' #') + '</p>';
 
+                      content += '</div>';
                     content += '</div>';
                   }
                   break;

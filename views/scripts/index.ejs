@@ -142,9 +142,9 @@ $(document).ready(() => {
 
       if (tmp && !$('#species').val().includes(tmp.id)) {
         data.push({
-                      value: tmp.id,
-                      text: `${tmp.commonName} (${tmp.scientificName})`,
-                      innerHTML: `${tmp.commonName}<br>&nbsp;<small>(${tmp.scientificName})</small>`
+          value: tmp.id,
+          text: `${tmp.commonName} (${tmp.scientificName})`,
+          innerHTML: `${tmp.commonName}<br>&nbsp;<small>(${tmp.scientificName})</small>`
         });
 
         values.push(tmp.id);
@@ -183,7 +183,7 @@ $(document).ready(() => {
             for (let key in res) {
               switch (key) {
                 case 'species':
-                  var tmp = birds.find((bird) => bird.id == res['species']);
+                  var tmp = birds.find((bird) => bird.id == res['species'] || bird.code == res['species']);
 
                   if (tmp && !$('#species').val().includes(tmp.id)) {
                     species.setData([{
